@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+           <title>CHATIO</title>
+    <style>
+    body{
+        background:#f9f9f9;
+    }
+    #container{
+        width: 700px;
+        margin:0 auto;
+    }
+    #chatArea{
+        height:300px;
+    }
+      #main{
+        display: none;    
+    }  
+    #chat{
+        float:left;
+        border: 1px #ccc solid;
+        border-radius: 10px;
+        background: #f4f4f4;
+        padding: 10px; 
+    }
+    #user{
+        float:left;
+        border: 1px #ccc solid;
+        border-radius: 10px;
+        background: #f4f4f4;
+        padding: 10px; 
+        margin-left: 20px;
+        width: 150px;
+        max-height:200px;
+    
+    }
+    #name{
+        float:left;
+        border: 1px #ccc solid;
+        border-radius: 10px;
+        background: #f4f4f4;
+        padding: 10px; 
+        margin-left: 20px;
+       
+    }
+    input{
+        height:30px;
+    }
+    </style>
+</head>
+<!-- UI FOR YHE CHATIO -->
+<body>
+    <div id="container">
+        <!-- USERNAME AREA -->
+        <div id="name">
+            <h2>ChatIo</h2>
+            <p>Create Username</p>
+            <div id="error"></div>
+            <form id='usernameForm'>
+                <input type="text" size="35" id="username">
+                <input type="Submit" value="Submit">
+            </form>
+        </div>
+        <!-- MESSAGE AREA -->
+        <div id="main">
+            <h2>ChatIo</h2>
+            <div id="chat">
+                <div id="chatArea"></div>
+                <form id="messageForm">
+                    <input type="text" size="35" id="message" placeholder="Send Message">
+                <input type="Submit" id="click" value="Submit">
+                </form>
+            </div>
+            <!--NUMBER OF JOINED USER BAR -->
+            <div id="user">
+                <div id="users"></div>
+            </div>
+        </div>
+    </div>
+    <!-- INCLUDING JQUERY CDN AND SOCKETIO -->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+    <script src='/socket.io/socket.io.js'></script>
+    <script>
+
+    $(function(){
+        // MAKING THE SOCKET CONNECTION
+        var socket=io.connect();
+        // GETTING THE ACCESS OF ELEMENTS BY THEIR IDS
+        var messageForm=$('#messageForm');
+        var message=$('#message');
+        var chat=$('#chatArea');
+        var usernameForm=$('#usernameForm');
+        var users=$('#users');
+        var username=$('#username');
+        var $error=$('#error');
+        // TRIGGERING THE SUBMIT EVENT
+        usernameForm.submit(function(e){
+            e.preventDefault();
+//  EMITTING TO SERVER ON EVENT 'new user' sending the value from the input box of #username
+            socket.emit('new user',username.val(),function(data){
+                if(data){
+                    $('#name').hide();
+                    $('#main').show();
+                }else{
+                    $error.html('Username is taken');
+                }
+            })
+            // socket.emit('send message',message.val());
+            // message.val('');
+            
+        }); 
+        // listening to server and adding the users joined in the socket to the #users bar in html
+        socket.on('usernames',function(data){
+            var html='';
+            for(i=0;i<data.length;i++){
+                html+=data[i]+'<br>';
+            }
+            users.html(html);
+        })
+        // SUBMITTING THE MESSAGEFORM AND EMITTING THE EVENT CONTAINING MESSAGES TO SERVER FROM CLIENT
+        messageForm.submit(function(e){
+            e.preventDefault();
+            socket.emit('send message',message.val());
+            message.val('');
+            
+        });
+        // LISTENING TO SERVER ON EVENT 'new message' AND APPENDING THE MESSAGE AND USERNAME TO THE CHATAREA DIV
+        socket.on('new message',function(data){
+            chat.append('<strong>'+data.user+'</strong> :'+data.msg+'<br>');
+        })
+    })
+    </script>    
+</body>
+</html>
